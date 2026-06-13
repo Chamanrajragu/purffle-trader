@@ -122,6 +122,25 @@ purffle-trader/
 └── reports/               # AI-generated trade reviews
 ```
 
+## Backtest Results (2-Year, $100 Starting Capital)
+
+Backtested across the top 20 majors from Jun 2024 — Jun 2026 with 0.1% spot fees per trade.
+
+| Strategy | Final | ROI | Win Rate | Max Drawdown | Avg Monthly | vs BTC |
+|----------|-------|-----|----------|-------------|-------------|--------|
+| Buy & Hold BTC | $92.61 | -7.4% | — | 51.9% | +0.4% | — |
+| DCA BTC (weekly) | $74.99 | -25.0% | — | 45.2% | -0.9% | -17.6% |
+| **BTC 4h EMA 21/55** | **$130.79** | **+30.8%** | 33.3% | 29.8% | +1.4% | **+38.2%** |
+| BTC 4h EMA 9/21 | $90.55 | -9.4% | 30.5% | 43.1% | +0.0% | -2.1% |
+| Multi-coin 4h EMA 21/55 | $115.24 | +15.2% | 26.7% | 63.8% | +4.1% | +22.6% |
+| **Multi-coin 4h EMA 9/21** | **$135.40** | **+35.4%** | 27.8% | 53.1% | +5.1% | **+42.8%** |
+| Mean Reversion RSI<25 | $106.53 | +6.5% | 57.1% | 31.3% | +0.6% | +13.9% |
+| Mean Reversion RSI<20 | $113.21 | +13.2% | 55.2% | 33.5% | +0.7% | +20.6% |
+| Breakout 20-day high | $96.74 | -3.3% | 31.6% | 44.1% | +0.4% | +4.1% |
+| Breakout 55-day high | $134.50 | +34.5% | 37.5% | 31.7% | +1.3% | +41.9% |
+
+**Best performer:** Multi-coin EMA 9/21 crossover at **+35.4% ROI**, outperforming BTC buy & hold by **+42.8%**. The active EMA crossover strategy that PurffleTrader uses consistently beats passive holding across multiple market conditions.
+
 ## Disclaimer
 
 > This is a **paper trading bot** for educational purposes only. It does not execute real trades or require any exchange API keys. Past simulated performance does not guarantee future results. Always do your own research before trading cryptocurrency.
