@@ -1,0 +1,33 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+myenv/
+.venv/
+*.egg-info/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+.claude/
+
+# Database & logs
+*.db
+*.log
+
+# Archives
+*.zip
+
+# Output
+stdout.txt
+stderr.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
