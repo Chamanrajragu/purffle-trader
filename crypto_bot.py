@@ -500,8 +500,28 @@ b{font-weight:700}
 .ctrl-btn:hover{border-color:var(--purple)}
 .ctrl-btn.paused{color:#f59e0b;border-color:rgba(245,158,11,.4)}
 .export-link{color:var(--t2)!important}
+/* Allocation breakdown */
+.alloc-bar{display:flex;height:18px;border-radius:9px;overflow:hidden;margin-bottom:12px;background:var(--s2)}
+.alloc-seg{height:100%;transition:width .4s ease}
+.alloc-legend{display:flex;flex-wrap:wrap;gap:8px 16px}
+.alloc-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2)}
+.alloc-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+/* Scanner search */
+.scan-search{width:100%;max-width:280px;padding:7px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--t1);font-size:12px;font-family:inherit;margin-bottom:10px}
+.scan-search:focus{outline:none;border-color:var(--purple)}
 
-@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}.shell{padding:16px}.statgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){
+ .metrics{grid-template-columns:repeat(2,1fr)}
+ .shell{padding:16px}
+ .statgrid{grid-template-columns:repeat(2,1fr)}
+ .topbar{flex-wrap:wrap;gap:12px}
+ .nav-links{flex-wrap:wrap}
+ .status-bar{flex-wrap:wrap;gap:8px}
+ .tbl-wrap{overflow-x:auto}
+ table{min-width:560px}
+ .scan-wrap{overflow:auto}
+}
+@media(max-width:560px){.metrics{grid-template-columns:1fr 1fr}.statgrid{grid-template-columns:1fr 1fr}.metric .val{font-size:22px}}
 </style></head><body>
 <div class="shell">
 <div class="topbar">
@@ -533,6 +553,21 @@ b{font-weight:700}
  <div class="metric"><div class="lbl">Holdings</div><div class="val">${{ '%.2f'|format(holdings_value) }}</div></div>
  <div class="metric"><div class="lbl">Open Positions</div><div class="val">{{ positions|length }}</div></div>
  <div class="metric"><div class="lbl">Total Trades</div><div class="val">{{ trade_count }}</div></div>
+</div>
+
+{% set palette = ['#f7931a','#3b82f6','#14b8a6','#22c55e','#a855f7','#ec4899','#ef4444','#8b5cf6','#eab308','#06b6d4'] %}
+<div class="sec"><h2>Portfolio Allocation</h2></div>
+<div class="tbl-wrap" style="padding:18px 16px">
+ {% if allocation %}
+ <div class="alloc-bar">
+  {% for a in allocation %}<div class="alloc-seg" style="width:{{ '%.3f'|format(a.pct) }}%;background:{{ palette[loop.index0 % palette|length] }}" title="{{ a.label }} {{ '%.1f'|format(a.pct) }}%"></div>{% endfor %}
+ </div>
+ <div class="alloc-legend">
+  {% for a in allocation %}<span class="alloc-item"><span class="alloc-dot" style="background:{{ palette[loop.index0 % palette|length] }}"></span>{{ a.label }} <b style="color:var(--t1)">{{ '%.1f'|format(a.pct) }}%</b> <span class="muted">${{ '%.2f'|format(a.value) }}</span></span>{% endfor %}
+ </div>
+ {% else %}
+ <div class="muted" style="text-align:center;padding:8px">All in cash — no open positions yet.</div>
+ {% endif %}
 </div>
 
 <div class="sec"><h2>Equity Curve <span class="badge">{{ equity.count }} snapshots</span></h2></div>
@@ -567,7 +602,8 @@ b{font-weight:700}
 </div>
 
 <div class="sec"><h2>&#x1F4E1; Live Market Scanner <span class="badge">top {{ market|length }} of {{ symbols|length }} pairs</span></h2></div>
-<div class="tbl-wrap scan-wrap"><table>
+<input type="text" id="scanSearch" class="scan-search" placeholder="Filter symbols… (e.g. BTC)" autocomplete="off">
+<div class="tbl-wrap scan-wrap"><table id="scanTable">
  <tr><th>Symbol</th><th>Price</th><th>RSI {{rsi_period}}</th><th>EMA {{ema_fast}}/{{ema_slow}}</th><th>Live Signal</th><th>Reason</th></tr>
  {% for m in market %}
  <tr>
@@ -702,6 +738,22 @@ b{font-weight:700}
   var live = document.getElementById('live');
   if (!live || !window.fetch) return;          // no-JS: <noscript> meta-refresh takes over
   var INTERVAL = 6000;
+
+  // Market Scanner filter — persists across live refreshes (input is re-created each swap).
+  function applyScanFilter(){
+    var input = document.getElementById('scanSearch');
+    var table = document.getElementById('scanTable');
+    if (!input || !table) return;
+    var q = input.value.trim().toUpperCase();
+    var rows = table.getElementsByTagName('tr');
+    for (var i = 1; i < rows.length; i++){   // row 0 is the header
+      var cell = rows[i].cells[0];
+      if (!cell) continue;
+      rows[i].style.display = (!q || cell.textContent.toUpperCase().indexOf(q) !== -1) ? '' : 'none';
+    }
+  }
+  live.addEventListener('input', function(e){ if (e.target && e.target.id === 'scanSearch') applyScanFilter(); });
+
   function animateValue(el, from, to, dur){
     var start = performance.now();
     function frame(now){
@@ -720,6 +772,9 @@ b{font-weight:700}
         if (!fresh) return;
         var oldEl = document.getElementById('mTotal');
         var oldV = oldEl ? parseFloat(oldEl.getAttribute('data-v')) : NaN;
+        var sEl = document.getElementById('scanSearch');
+        var savedQuery = sEl ? sEl.value : '';
+        var savedFocus = sEl && document.activeElement === sEl;
         live.style.opacity = '0.55';
         setTimeout(function(){
           live.innerHTML = fresh.innerHTML;
@@ -728,6 +783,12 @@ b{font-weight:700}
           if (newEl){
             var newV = parseFloat(newEl.getAttribute('data-v'));
             if (!isNaN(oldV) && !isNaN(newV) && oldV !== newV) animateValue(newEl, oldV, newV, 700);
+          }
+          var newSearch = document.getElementById('scanSearch');
+          if (newSearch && savedQuery){
+            newSearch.value = savedQuery;
+            if (savedFocus){ newSearch.focus(); }
+            applyScanFilter();
           }
         }, 160);
       }).catch(function(){});
@@ -927,6 +988,15 @@ def dashboard():
     profit_rows.sort(key=lambda r: r["total"], reverse=True)
     realized_total = sum(r["realized"] for r in profit_rows)
     equity = build_equity_sparkline(equity_series)
+    # Portfolio allocation breakdown (cash + each holding as a share of total value).
+    total_value = cash + holdings_value
+    allocation = []
+    if total_value > 0:
+        allocation.append({"label": "Cash", "value": cash, "pct": cash / total_value * 100})
+        for p in open_positions:
+            allocation.append({"label": p["symbol"], "value": p["value"],
+                               "pct": p["value"] / total_value * 100})
+    allocation.sort(key=lambda a: -a["value"])
     return render_template_string(
         DASHBOARD_HTML,
         cash=cash, holdings_value=holdings_value, total=cash + holdings_value,
@@ -941,6 +1011,7 @@ def dashboard():
         kline_interval=KLINE_INTERVAL, position_size_pct=POSITION_SIZE_PCT,
         take_profit_pct=TAKE_PROFIT_PCT, stop_loss_pct=STOP_LOSS_PCT,
         stats=stats, market=build_market_view(), paused=_scanner_state["paused"],
+        allocation=allocation,
     )
 
 @app.route("/export/trades.csv")
