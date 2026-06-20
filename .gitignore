@@ -23,6 +23,9 @@ myenv/
 # Archives
 *.zip
 
+# Third-party reference repo (not part of this project)
+crypto-arbitrage-bot-automated-trading-main/
+
 # Output
 stdout.txt
 stderr.txt
